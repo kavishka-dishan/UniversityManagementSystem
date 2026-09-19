@@ -13,7 +13,7 @@ public class StudentHashTable {
     }
 
     private int hashFunction(int studentId) {
-        return Math.abs(studentId) % tableSize;
+        return (studentId & 0x7fffffff) % tableSize;
     }
 
     public boolean insert(Student student) {
@@ -26,6 +26,11 @@ public class StudentHashTable {
             System.out.println("Student ID already exists in hash table.");
             return false;
         }
+
+        return insertWithoutDuplicateCheck(student);
+    }
+
+    private boolean insertWithoutDuplicateCheck(Student student) {
 
         int index = hashFunction(student.getStudentId());
         int startIndex = index;
@@ -41,7 +46,6 @@ public class StudentHashTable {
 
         } while (index != startIndex);
 
-        System.out.println("Hash table is full.");
         return false;
     }
 
@@ -52,9 +56,11 @@ public class StudentHashTable {
 
         do {
 
-            if (table[index] != null &&
-                table[index].getStudentId() == studentId) {
+            if (table[index] == null) {
+                return null;
+            }
 
+            if (table[index].getStudentId() == studentId) {
                 return table[index];
             }
 
@@ -65,9 +71,46 @@ public class StudentHashTable {
         return null;
     }
 
+    public boolean delete(int studentId) {
+
+        int index = hashFunction(studentId);
+        int startIndex = index;
+
+        do {
+
+            if (table[index] == null) {
+                return false;
+            }
+
+            if (table[index].getStudentId() == studentId) {
+
+                table[index] = null;
+
+                int nextIndex = (index + 1) % tableSize;
+
+                while (table[nextIndex] != null) {
+
+                    Student studentToReinsert = table[nextIndex];
+                    table[nextIndex] = null;
+
+                    insertWithoutDuplicateCheck(studentToReinsert);
+
+                    nextIndex = (nextIndex + 1) % tableSize;
+                }
+
+                return true;
+            }
+
+            index = (index + 1) % tableSize;
+
+        } while (index != startIndex);
+
+        return false;
+    }
+
     public void displayTable() {
 
-        System.out.println("========== HASH TABLE ==========");
+        System.out.println("\n========== HASH TABLE ==========");
 
         for (int i = 0; i < tableSize; i++) {
 
@@ -77,8 +120,8 @@ public class StudentHashTable {
                 System.out.println("Empty");
             } else {
                 System.out.println(
-                    "ID = " + table[i].getStudentId()
-                    + ", Name = " + table[i].getName()
+                        "ID = " + table[i].getStudentId()
+                        + ", Name = " + table[i].getName()
                 );
             }
         }
